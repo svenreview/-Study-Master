@@ -17,12 +17,13 @@
           <span>AI 개인 학습 운영체제</span>
         </div>
       </div>
+      <button id="modeToggle" class="mode-toggle" type="button" aria-pressed="true">상세 기능 보기</button>
       <button id="newProjectBtn" class="primary full">+ 새 학습 만들기</button>
       <nav id="nav">
-        <button data-view="dashboard" class="nav-item active">⌂ 오늘 학습</button>
+        <button data-view="dashboard" class="nav-item active">⌂ 시작</button>
         <button data-view="session" class="nav-item">▶ 자동 학습 세션</button>
-        <button data-view="materials" class="nav-item">▣ 학습자료</button>
-        <button data-view="sets" class="nav-item">▦ 학습세트</button>
+        <button data-view="materials" class="nav-item">▣ 자료 넣기</button>
+        <button data-view="sets" class="nav-item">▦ 공부하기</button>
         <button data-view="setStudy" class="nav-item">▶ 세트 학습</button>
         <button data-view="progress" class="nav-item">↗ 진도 관리</button>
         <button data-view="history" class="nav-item">◷ 학습 기록</button>
@@ -36,7 +37,7 @@
         <button data-view="mcq" class="nav-item">④ 객관식 학습</button>
         <button data-view="aiStudy" class="nav-item">✧ AI 학습</button>
         <div class="nav-label">복습</div>
-        <button data-view="wrong" class="nav-item">↺ 오답 복습 <span id="wrongBadge" class="badge">0</span></button>
+        <button data-view="wrong" class="nav-item">↺ 다시 보기 <span id="wrongBadge" class="badge">0</span></button>
         <button data-view="weak" class="nav-item">⚑ 취약문제</button>
         <button data-view="notes" class="nav-item">✎ 이론·내 노트</button>
       </nav>

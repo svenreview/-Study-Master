@@ -230,6 +230,8 @@ function ensureBuiltInStarterSets(p){
 
 let state=load();
 let currentView='dashboard';
+const SIMPLE_MODE_KEY='study-os-simple-mode';
+let simpleMode=localStorage.getItem(SIMPLE_MODE_KEY)!=='false';
 let oxMode='all';
 let oxQueue=[];
 let oxIndex=0;
@@ -516,16 +518,41 @@ function updateBadges(){
 function setView(v){
   currentView=v;
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
-  document.querySelector('#pageTitle').textContent=titleFor(v);
+  document.querySelector('#pageTitle').textContent=simpleMode?({dashboard:'오늘은 이렇게 시작하세요',materials:'자료 넣기',sets:'공부하기',wrong:'다시 보기'}[v]||titleFor(v)):titleFor(v);
   render();
 }
 function render(){
   const p=project();
+  document.body.classList.toggle('simple-mode',simpleMode);
+  const toggle=document.querySelector('#modeToggle');
+  toggle.textContent=simpleMode?'상세 기능 보기':'간편 화면으로';
+  toggle.setAttribute('aria-pressed',String(simpleMode));
+  document.querySelector('#pageTitle').textContent=simpleMode?({dashboard:'오늘은 이렇게 시작하세요',materials:'자료 넣기',sets:'공부하기',wrong:'다시 보기'}[currentView]||titleFor(currentView)):titleFor(currentView);
   document.querySelector('#projectLabel').textContent=`${p.name} · ${p.goal||'개인 학습'}`;
   const c=document.querySelector('#content');
-  if(vmap[currentView])c.innerHTML=setStudyRibbon(p)+vmap[currentView](p);
+  if(vmap[currentView])c.innerHTML=simpleMode&&currentView==='dashboard'?simpleDashboard(p):simpleMode&&currentView==='materials'?simpleMaterials(p):setStudyRibbon(p)+vmap[currentView](p);
   bindView();
   updateBadges();
+}
+
+function simpleDashboard(p){
+  const due=dueReviewPlans(p).length;
+  const recent=p.materials.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,3);
+  return `<div class="simple-intro"><span class="simple-kicker">Study OS v19 · 간편 화면</span><h2>자료를 넣고, 범위를 골라 공부하세요.</h2><p>처음이라면 아래 순서대로 누르시면 됩니다.</p></div>
+    <div class="simple-steps" aria-label="학습 순서"><span><b>1</b> 자료 넣기</span><span><b>2</b> 단원 고르기</span><span><b>3</b> 공부하기</span><span><b>4</b> 다시 보기</span></div>
+    <div class="simple-main card"><div><span class="simple-kicker">첫 번째 단계</span><h2>${p.materials.length?'이어서 공부할까요?':'학습 PDF를 넣어주세요'}</h2><p>${p.materials.length?'등록한 자료에서 공부할 범위를 고르세요.':'PDF를 선택하면 페이지와 단원을 찾아 보여드립니다.'}</p></div>${uploadBox('quick')}</div>
+    ${recent.length?`<section class="simple-section"><div class="simple-section-head"><h2>내 자료</h2><button data-go="materials" class="simple-link">전체 보기</button></div><div class="simple-material-list">${recent.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원</small></span><b aria-hidden="true">→</b></button>`).join('')}</div></section>`:''}
+    <div class="simple-actions"><button class="simple-action" data-go="sets"><span>▦</span><strong>공부하기</strong><small>만든 카드와 문제를 한 곳에서</small></button><button class="simple-action" data-go="wrong"><span>↺</span><strong>다시 보기</strong><small>${due?`예약된 복습 ${due}개`:'틀린 문제와 복습 확인'}</small></button></div>
+    <p class="simple-privacy">🔒 자료는 이 브라우저에 저장됩니다. 다른 기기에서 쓰려면 백업 파일을 옮겨야 합니다.</p>`;
+}
+
+function simpleMaterials(p){
+  const materials=p.materials.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  return `<div class="simple-intro"><span class="simple-kicker">1단계 · 자료 넣기</span><h2>공부할 PDF를 골라주세요.</h2><p>파일을 넣으면 단원을 찾습니다. 스캔 PDF도 보관할 수 있습니다.</p></div>
+    <div class="card simple-upload">${uploadBox('main')}</div>
+    <section class="simple-section"><div class="simple-section-head"><h2>등록한 자료 <small>${materials.length}개</small></h2></div>
+    ${materials.length?`<div class="simple-material-list">${materials.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원 · 눌러서 범위 선택</small></span><b aria-hidden="true">→</b></button>`).join('')}</div>`:'<div class="card empty">아직 자료가 없습니다. 위 버튼으로 PDF를 추가해 주세요.</div>'}</section>
+    <p class="simple-privacy">스캔 자료의 이미지 읽기와 새 카드·문제 생성은 AI 키 설정 후 사용할 수 있습니다.</p>`;
 }
 
 function uploadBox(idPrefix='main'){
@@ -1620,6 +1647,7 @@ function applyAiStructure(result,r){
 
 // global bindings
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{if(['ox','wrong','weak'].includes(b.dataset.view)){oxUnitFilter=null;oxUnitFilterLabel='';oxQueue=[]}setView(b.dataset.view)});
+document.querySelector('#modeToggle').onclick=()=>{simpleMode=!simpleMode;localStorage.setItem(SIMPLE_MODE_KEY,String(simpleMode));setView('dashboard')};
 document.querySelector('#projectSelect').onchange=e=>{state.activeProjectId=e.target.value;oxQueue=[];save();render()};
 document.querySelector('#newProjectBtn').onclick=()=>document.querySelector('#projectDialog').showModal();
 document.querySelector('#projectForm').addEventListener('submit',e=>{e.preventDefault();const name=document.querySelector('#projectName').value.trim();if(!name)return;const p={id:uid(),name,goal:document.querySelector('#projectGoal').value.trim(),createdAt:new Date().toISOString(),materials:[],questions:[],notes:[],outputs:[],studyFocus:'오늘 가장 중요한 학습 한 가지',progress:[],sessions:[],guidedSessions:[],dailyGoal:{minutes:50,pages:20,questions:30}};state.projects.push(p);state.activeProjectId=p.id;save();document.querySelector('#projectDialog').close();e.target.reset();setView('dashboard')});
