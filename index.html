@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Study OS v19</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <strong>Study OS</strong>
+          <span>AI 개인 학습 운영체제</span>
+        </div>
+      </div>
+      <button id="newProjectBtn" class="primary full">+ 새 학습 만들기</button>
+      <nav id="nav">
+        <button data-view="dashboard" class="nav-item active">⌂ 오늘 학습</button>
+        <button data-view="session" class="nav-item">▶ 자동 학습 세션</button>
+        <button data-view="materials" class="nav-item">▣ 학습자료</button>
+        <button data-view="sets" class="nav-item">▦ 학습세트</button>
+        <button data-view="setStudy" class="nav-item">▶ 세트 학습</button>
+        <button data-view="progress" class="nav-item">↗ 진도 관리</button>
+        <button data-view="history" class="nav-item">◷ 학습 기록</button>
+        <div class="nav-label">학습법</div>
+        <button data-view="theory" class="nav-item">▤ 이론 학습</button>
+        <button data-view="recall" class="nav-item">🗣 회상·설명 학습</button>
+        <button data-view="summary" class="nav-item">✦ 핵심 요약</button>
+        <button data-view="ox" class="nav-item">○× OX 반복학습</button>
+        <button data-view="flashcards" class="nav-item">▱ 카드 학습</button>
+        <button data-view="blanks" class="nav-item">▭ 빈칸 학습</button>
+        <button data-view="mcq" class="nav-item">④ 객관식 학습</button>
+        <button data-view="aiStudy" class="nav-item">✧ AI 학습</button>
+        <div class="nav-label">복습</div>
+        <button data-view="wrong" class="nav-item">↺ 오답 복습 <span id="wrongBadge" class="badge">0</span></button>
+        <button data-view="weak" class="nav-item">⚑ 취약문제</button>
+        <button data-view="notes" class="nav-item">✎ 이론·내 노트</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="security-note">🔒 자료는 현재 이 브라우저에만 저장됩니다.</div>
+        <button id="exportBtn" class="ghost full">백업 내보내기</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow" id="projectLabel">학습 프로젝트</div>
+          <h1 id="pageTitle">오늘 학습</h1>
+        </div>
+        <div class="top-actions">
+          <select id="projectSelect" aria-label="프로젝트 선택"></select>
+          <button id="quickAddNote" class="ghost">+ 빠른 메모</button>
+        </div>
+      </header>
+      <section id="content" class="content"></section>
+    </main>
+  </div>
+
+  <dialog id="projectDialog">
+    <form method="dialog" id="projectForm" class="dialog-card">
+      <h2>새 학습 만들기</h2>
+      <label>학습 이름<input id="projectName" required placeholder="예: 공인중개사 1차" /></label>
+      <label>목표<input id="projectGoal" placeholder="예: 2026년 1차 합격" /></label>
+      <div class="dialog-actions"><button value="cancel" class="ghost">취소</button><button value="default" class="primary">만들기</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="noteDialog">
+    <form method="dialog" id="noteForm" class="dialog-card">
+      <h2>빠른 메모</h2>
+      <label>제목<input id="noteTitle" required placeholder="예: 해제와 해지 차이" /></label>
+      <label>메모<textarea id="noteBody" rows="6" placeholder="직접 정리한 내용"></textarea></label>
+      <div class="dialog-actions"><button value="cancel" class="ghost">취소</button><button value="default" class="primary">저장</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="materialDialog" class="wide-dialog">
+    <div class="dialog-card material-dialog-card">
+      <div class="row">
+        <div>
+          <div class="eyebrow">자료 원문 · 범위 학습</div>
+          <h2 id="materialDialogTitle">학습자료</h2>
+        </div>
+        <button id="closeMaterialDialog" class="ghost" type="button">닫기</button>
+      </div>
+      <div id="materialDialogMeta" class="meta-row"></div>
+      <div id="materialUnitNav" class="unit-navigator"></div>
+      <div class="range-box compact-range">
+        <label>시작 페이지<input id="rangeStartPage" type="number" min="1" class="text-input" /></label>
+        <label>끝 페이지<input id="rangeEndPage" type="number" min="1" class="text-input" /></label>
+        <button id="rangePreviewBtn" class="ghost" type="button">범위 보기</button>
+        <button id="aiStructureBtn" class="ghost" type="button">단원 정밀 구조화</button>
+      </div>
+      <div class="source-tools-card">
+        <div class="row"><div><strong>자료 기반 학습도구</strong><div class="muted small">선택한 파일·페이지에 실제로 있는 내용만 사용합니다. 카드·OX·빈칸·객관식·요약은 생성 후 자동 잠금되어 중복 AI 호출을 막습니다.</div></div><span class="pill good">SOURCE ONLY</span></div>
+        <div id="sourceToolButtons" class="source-tool-grid"></div>
+      </div>
+      <div class="ai-study-entry row">
+        <div><strong>AI와 공부하고 싶을 때</strong><div class="muted small">질문·설명·튜터링은 자료 학습도구와 분리해서 실행합니다.</div></div>
+        <button id="openAiStudyBtn" class="primary" type="button">✧ AI 학습</button>
+      </div>
+      <div id="aiStatusBox" class="notice neutral">자료 범위를 선택하세요. 자료 기반 학습도구는 원문 밖의 내용을 보충하지 않습니다.</div>
+      <div id="materialImagePreview" class="scan-preview-grid" style="display:none"></div>
+      <pre id="materialTextPreview" class="source-preview"></pre>
+      <div id="aiResultBox"></div>
+    </div>
+  </dialog>
+
+  <dialog id="aiStudyDialog" class="wide-dialog">
+    <div class="dialog-card material-dialog-card">
+      <div class="row"><div><div class="eyebrow">분리형 AI 학습</div><h2>AI 학습</h2></div><button id="closeAiStudyDialog" class="ghost" type="button">닫기</button></div>
+      <div class="notice neutral">기본값은 <b>자료만</b>입니다. 외부지식 보충은 사용자가 직접 허용할 때만 별도 영역으로 표시합니다.</div>
+      <div class="form-grid">
+        <label>학습 방식<select id="aiStudyMode" class="text-input"><option value="explain">쉽게 설명</option><option value="ask">질문 답변</option><option value="coach">튜터처럼 학습</option></select></label>
+        <label>근거 범위<select id="aiStudyScope" class="text-input"><option value="source">자료만 사용</option><option value="expanded">자료 + AI 보충 허용</option></select></label>
+      </div>
+      <label class="block-label">질문 또는 원하는 학습 방식<textarea id="aiStudyPrompt" class="textarea-large mini" placeholder="예: 이 범위에서 시험에 자주 헷갈릴 만한 개념을 질문하며 가르쳐줘"></textarea></label>
+      <button id="runAiStudyBtn" class="primary" type="button">AI 학습 시작</button>
+      <div id="aiStudyResult"></div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
