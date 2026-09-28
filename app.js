@@ -1317,6 +1317,7 @@ async function handleFiles(files){
       console.error(err);m.analysisStatus='error';m.analysis={detectedType:'읽기 오류',units:[],stage:err?.message||'파일 읽기 실패'};
     }
     save();render();
+    if(files.length===1&&simpleMode&&ext==='json'&&m.analysis?.importedQuestions){setView('ox');continue}
     if(files.length===1&&simpleMode&&['ready','scan-ready'].includes(m.analysisStatus))await openMaterialDialog(m.id);
   }
 }
@@ -1490,6 +1491,9 @@ async function openMaterialDialog(materialId,initialRange=null){
   const payload=await getMaterialPayload(m.id).catch(()=>null);
   const pageCount=payload?.pages?.length||m.pageCount||1;
   document.querySelector('#materialDialogMeta').innerHTML=`<span>${esc(m.analysis?.detectedType||roleLabel(m.sourceRole))}</span><span>${m.scanMode?'스캔 이미지형':Number(m.contentChars||0).toLocaleString()+'자'}</span><span>${pageCount}p</span>${m.analysis?.profileName?`<span class="pill good">목차 프리셋</span>`:''}${m.analysis?.profileCoverage?`<span class="pill">${esc(m.analysis.profileCoverage)}</span>`:''}`;
+  const guide=document.querySelector('#materialGuideStatus');
+  guide.className=`notice ${m.scanMode?'warn':'neutral'}`;
+  guide.textContent=m.scanMode?'이 PDF는 사진처럼 스캔된 파일입니다. 단원과 페이지는 볼 수 있지만, 새 문제를 자동으로 만들려면 AI 키 설정이 필요합니다. 별도로 받은 OX JSON 문제 파일은 ‘자료 넣기 → 파일 추가’로 불러오면 바로 풀 수 있습니다.':'파일의 글자를 읽었습니다. 단원 또는 페이지를 고른 다음 아래에서 만들 문제 유형을 누르세요.';
   const start=document.querySelector('#rangeStartPage'),end=document.querySelector('#rangeEndPage');start.max=pageCount;end.max=pageCount;start.value=Math.max(1,Math.min(pageCount,Number(initialRange?.start||1)));end.value=Math.max(Number(start.value),Math.min(pageCount,Number(initialRange?.end||Math.min(pageCount,5))));
   renderUnitNavigator(m);
   document.querySelector('#aiResultBox').innerHTML='';
