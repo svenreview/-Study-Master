@@ -541,17 +541,17 @@ function simpleDashboard(p){
   return `<div class="simple-intro"><span class="simple-kicker">Study OS v19 · 간편 화면</span><h2>자료를 넣고, 범위를 골라 공부하세요.</h2><p>처음이라면 아래 순서대로 누르시면 됩니다.</p></div>
     <div class="simple-steps" aria-label="학습 순서"><span><b>1</b> 자료 넣기</span><span><b>2</b> 단원 고르기</span><span><b>3</b> 공부하기</span><span><b>4</b> 다시 보기</span></div>
     <div class="simple-main card"><div><span class="simple-kicker">첫 번째 단계</span><h2>${p.materials.length?'이어서 공부할까요?':'학습 PDF를 넣어주세요'}</h2><p>${p.materials.length?'등록한 자료에서 공부할 범위를 고르세요.':'PDF를 선택하면 페이지와 단원을 찾아 보여드립니다.'}</p></div>${uploadBox('quick')}</div>
-    ${recent.length?`<section class="simple-section"><div class="simple-section-head"><h2>내 자료</h2><button data-go="materials" class="simple-link">전체 보기</button></div><div class="simple-material-list">${recent.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원</small></span><b aria-hidden="true">→</b></button>`).join('')}</div></section>`:''}
+    ${recent.length?`<section class="simple-section"><div class="simple-section-head"><h2>내 자료 · 눌러서 문제 만들기</h2><button data-go="materials" class="simple-link">전체 보기</button></div><div class="simple-material-list">${recent.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원 · 범위 고르기 → 문제 만들기</small></span><b aria-hidden="true">→</b></button>`).join('')}</div></section>`:''}
     <div class="simple-actions"><button class="simple-action" data-go="sets"><span>▦</span><strong>공부하기</strong><small>만든 카드와 문제를 한 곳에서</small></button><button class="simple-action" data-go="wrong"><span>↺</span><strong>다시 보기</strong><small>${due?`예약된 복습 ${due}개`:'틀린 문제와 복습 확인'}</small></button></div>
     <p class="simple-privacy">🔒 자료는 이 브라우저에 저장됩니다. 다른 기기에서 쓰려면 백업 파일을 옮겨야 합니다.</p>`;
 }
 
 function simpleMaterials(p){
   const materials=p.materials.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  return `<div class="simple-intro"><span class="simple-kicker">1단계 · 자료 넣기</span><h2>공부할 PDF를 골라주세요.</h2><p>파일을 넣으면 단원을 찾습니다. 스캔 PDF도 보관할 수 있습니다.</p></div>
+  return `<div class="simple-intro"><span class="simple-kicker">1단계 · 자료 넣기</span><h2>공부할 PDF를 골라주세요.</h2><p>등록한 파일을 누르고 단원 또는 페이지를 고른 뒤, 카드·OX·빈칸·객관식 중 원하는 문제를 만드세요.</p></div>
     <div class="card simple-upload">${uploadBox('main')}</div>
     <section class="simple-section"><div class="simple-section-head"><h2>등록한 자료 <small>${materials.length}개</small></h2></div>
-    ${materials.length?`<div class="simple-material-list">${materials.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원 · 눌러서 범위 선택</small></span><b aria-hidden="true">→</b></button>`).join('')}</div>`:'<div class="card empty">아직 자료가 없습니다. 위 버튼으로 PDF를 추가해 주세요.</div>'}</section>
+    ${materials.length?`<div class="simple-material-list">${materials.map(m=>`<button class="simple-material" data-open-material="${esc(m.id)}"><span class="simple-file">${esc((m.type||'자료').toUpperCase())}</span><span><strong>${esc(m.name)}</strong><small>${esc(statusLabel(m)[0])} · ${materialUnits(m).length}개 단원 · 눌러서 문제 만들기</small></span><b aria-hidden="true">→</b></button>`).join('')}</div>`:'<div class="card empty">아직 자료가 없습니다. 위 버튼으로 PDF를 추가해 주세요.</div>'}</section>
     <p class="simple-privacy">스캔 자료의 이미지 읽기와 새 카드·문제 생성은 AI 키 설정 후 사용할 수 있습니다.</p>`;
 }
 
@@ -1317,6 +1317,7 @@ async function handleFiles(files){
       console.error(err);m.analysisStatus='error';m.analysis={detectedType:'읽기 오류',units:[],stage:err?.message||'파일 읽기 실패'};
     }
     save();render();
+    if(files.length===1&&simpleMode&&['ready','scan-ready'].includes(m.analysisStatus))await openMaterialDialog(m.id);
   }
 }
 
@@ -1493,7 +1494,10 @@ async function openMaterialDialog(materialId,initialRange=null){
   renderUnitNavigator(m);
   document.querySelector('#aiResultBox').innerHTML='';
   document.querySelector('#aiStatusBox').className='notice neutral';document.querySelector('#aiStatusBox').textContent='자료 범위를 선택하세요. 자료 기반 학습도구는 원문 밖의 내용을 보충하지 않습니다.';
-  await previewMaterialRange();await refreshSourceToolButtons();dlg.showModal();checkAiStatus();
+  await previewMaterialRange();await refreshSourceToolButtons();dlg.showModal();
+  const configured=await checkAiStatus();
+  const status=document.querySelector('#aiStatusBox');
+  if(!configured){status.className='notice warn';status.innerHTML='문제 생성 준비가 필요합니다. Vercel 프로젝트의 환경변수 <b>OPENAI_API_KEY</b>를 설정한 뒤 재배포해 주세요. 현재는 자료·단원 확인과 이미 만든 문제 복습을 이용할 수 있습니다.'}
 }
 async function getSelectedMaterialRange(){
   const m=project().materials.find(x=>x.id===activeMaterialDialogId);if(!m)return null;
